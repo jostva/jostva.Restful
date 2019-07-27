@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29009.5
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E54C5BD0-1B38-4F80-A2F7-24E64E2B08C2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "jostva.Restful.API", "src\jostva.Restful.API\jostva.Restful.API.csproj", "{BA1A94F6-C849-42C6-925F-376E90B995B9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BA1A94F6-C849-42C6-925F-376E90B995B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA1A94F6-C849-42C6-925F-376E90B995B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA1A94F6-C849-42C6-925F-376E90B995B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA1A94F6-C849-42C6-925F-376E90B995B9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{BA1A94F6-C849-42C6-925F-376E90B995B9} = {E54C5BD0-1B38-4F80-A2F7-24E64E2B08C2}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F7669C5D-B951-4C70-93A0-00306C61875D}
+	EndGlobalSection
+EndGlobal
