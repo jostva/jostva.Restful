@@ -17,6 +17,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
+using System.Linq;
 
 #endregion
 
@@ -69,7 +70,28 @@ namespace jostva.Restful.API
                 setupAction.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter());
 
                 //  TODO:   INVESTIGAR!! - No está recibiendo XML....
-                setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter(setupAction));
+                //setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter(setupAction));
+
+                //  Xml Custom
+                //var xmlDataContractSerializerInputFormatter =
+                //        new XmlDataContractSerializerInputFormatter();
+                //xmlDataContractSerializerInputFormatter.SupportedMediaTypes
+                //    .Add("application/vnd.marvin.authorwithdateofdeath.full+xml");
+                //setupAction.InputFormatters.Add(xmlDataContractSerializerInputFormatter);
+                //  INVESTIGAR!! - No está recibiendo XML....
+
+                var jsonInputFormatter = setupAction.InputFormatters.OfType<JsonInputFormatter>().FirstOrDefault();
+                if (jsonInputFormatter != null)
+                {
+                    jsonInputFormatter.SupportedMediaTypes.Add("application/vnd.marvin.author.full+json");
+                    jsonInputFormatter.SupportedMediaTypes.Add("application/vnd.marvin.authorwithdateofdeath.full+json");
+                }
+
+                var jsonOuputFormatter = setupAction.OutputFormatters.OfType<JsonOutputFormatter>().FirstOrDefault();
+                if (jsonOuputFormatter != null)
+                {
+                    jsonOuputFormatter.SupportedMediaTypes.Add("application/vnd.marvin.hateoas+json");
+                }
             })
             //.AddXmlSerializerFormatters()
             //.AddXmlDataContractSerializerFormatters()

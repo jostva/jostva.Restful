@@ -148,3 +148,32 @@
 2019-08-24 15:08:05.6593 Info Adding target FileTarget(Name=alldata)
 2019-08-24 15:08:05.6755 Info Adding target FileTarget(Name=otherFile-web)
 2019-08-24 15:08:05.7295 Info Found 45 configuration items
+2019-08-24 17:10:35.2770 Info Message Template Auto Format enabled
+2019-08-24 17:10:35.3041 Info Loading assembly: NLog.Web.AspNetCore
+2019-08-24 17:10:35.4258 Info Adding target FileTarget(Name=alldata)
+2019-08-24 17:10:35.4502 Info Adding target FileTarget(Name=otherFile-web)
+2019-08-24 17:10:35.5047 Info Found 45 configuration items
+2019-08-24 17:16:56.3960 Info Message Template Auto Format enabled
+2019-08-24 17:16:56.4189 Info Loading assembly: NLog.Web.AspNetCore
+2019-08-24 17:16:56.5276 Info Adding target FileTarget(Name=alldata)
+2019-08-24 17:16:56.5486 Info Adding target FileTarget(Name=otherFile-web)
+2019-08-24 17:16:56.5952 Info Found 45 configuration items
+2019-08-24 17:28:04.6473 Info Message Template Auto Format enabled
+2019-08-24 17:28:04.6726 Info Loading assembly: NLog.Web.AspNetCore
+2019-08-24 17:28:04.7593 Info Adding target FileTarget(Name=alldata)
+2019-08-24 17:28:04.7731 Info Adding target FileTarget(Name=otherFile-web)
+2019-08-24 17:28:04.8186 Info Found 45 configuration items
+2019-08-24 17:42:44.2486 Info Message Template Auto Format enabled
+2019-08-24 17:42:44.2486 Info Loading assembly: NLog.Web.AspNetCore
+2019-08-24 17:42:44.3069 Info Adding target FileTarget(Name=alldata)
+2019-08-24 17:42:44.3069 Info Adding target FileTarget(Name=otherFile-web)
+2019-08-24 17:42:44.3386 Info Found 45 configuration items
+2019-08-24 17:42:44.3521 Info Configuration initialized.
+2019-08-24 17:42:44.3677 Info NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c. File version: 4.6.4.10085. Product version: 4.6.4.
+2019-08-24 17:42:45.5704 Info AppDomain Shutting down. Logger closing...
+2019-08-24 17:42:45.5922 Info Logger has been shut down.
+2019-08-24 18:08:44.4011 Info Message Template Auto Format enabled
+2019-08-24 18:08:44.4406 Info Loading assembly: NLog.Web.AspNetCore
+2019-08-24 18:08:44.5687 Info Adding target FileTarget(Name=alldata)
+2019-08-24 18:08:44.5836 Info Adding target FileTarget(Name=otherFile-web)
+2019-08-24 18:08:44.6303 Info Found 45 configuration items

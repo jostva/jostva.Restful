@@ -50,7 +50,8 @@ namespace jostva.Restful.API.Controllers
 
         [HttpGet(Name = "GetAuthors")]
         //public IActionResult GetAuthors([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
-        public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters)
+        public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters,
+            [FromHeader(Name = "Accept")] string mediaType)
         {
             if (!propertyMappingService.ValidMappingExistsFor<AuthorDto, Author>(authorsResourceParameters.OrderBy))
             {
@@ -63,41 +64,69 @@ namespace jostva.Restful.API.Controllers
             }
 
             PagedList<Author> authorsFromRepo = libraryRepository.GetAuthors(authorsResourceParameters);
-
-            var paginationMetadata = new
-            {
-                totalCount = authorsFromRepo.TotalCount,
-                pageSize = authorsFromRepo.PageSize,
-                currentPage = authorsFromRepo.CurrentPage,
-                totalPages = authorsFromRepo.TotalPages
-            };
-
-            Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(paginationMetadata));
             IEnumerable<AuthorDto> authors = mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo);
 
-            var links = CreateLinksForAuthors(authorsResourceParameters,
-                            authorsFromRepo.HasNext,
-                            authorsFromRepo.HasPrevious);
-
-            var shapeAuthors = authors.ShapeData(authorsResourceParameters.Fields);
-            IEnumerable<IDictionary<string, object>> shapedAuthorsWithLinks = shapeAuthors.Select(author =>
-                {
-                    var authorAsDictionary = author as IDictionary<string, object>;
-                    var authorLinks = CreateLinksForAuthor(
-                        (Guid)authorAsDictionary["Id"], authorsResourceParameters.Fields);
-
-                    authorAsDictionary.Add("links", authorLinks);
-
-                    return authorAsDictionary;
-                });
-
-            var linkedCollectionResource = new
+            if (mediaType == "application/vnd.marvin.hateoas+json")
             {
-                value = shapedAuthorsWithLinks,
-                links = links
-            };
+                var paginationMetadata = new
+                {
+                    totalCount = authorsFromRepo.TotalCount,
+                    pageSize = authorsFromRepo.PageSize,
+                    currentPage = authorsFromRepo.CurrentPage,
+                    totalPages = authorsFromRepo.TotalPages
+                };
 
-            return Ok(linkedCollectionResource);
+                Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(paginationMetadata));
+
+                var links = CreateLinksForAuthors(authorsResourceParameters,
+                                authorsFromRepo.HasNext,
+                                authorsFromRepo.HasPrevious);
+
+                var shapeAuthors = authors.ShapeData(authorsResourceParameters.Fields);
+                IEnumerable<IDictionary<string, object>> shapedAuthorsWithLinks = shapeAuthors.Select(author =>
+                    {
+                        var authorAsDictionary = author as IDictionary<string, object>;
+                        var authorLinks = CreateLinksForAuthor(
+                            (Guid)authorAsDictionary["Id"], authorsResourceParameters.Fields);
+
+                        authorAsDictionary.Add("links", authorLinks);
+
+                        return authorAsDictionary;
+                    });
+
+                var linkedCollectionResource = new
+                {
+                    value = shapedAuthorsWithLinks,
+                    links = links
+                };
+
+                return Ok(linkedCollectionResource);
+            }
+            else
+            {
+                var previousPageLink = authorsFromRepo.HasPrevious ?
+                   CreateAuthorsResourceUri(authorsResourceParameters,
+                   ResourceUriType.PreviousPage) : null;
+
+                var nextPageLink = authorsFromRepo.HasNext ?
+                    CreateAuthorsResourceUri(authorsResourceParameters,
+                    ResourceUriType.NextPage) : null;
+
+                var paginationMetadata = new
+                {
+                    previousPageLink = previousPageLink,
+                    nextPageLink = nextPageLink,
+                    totalCount = authorsFromRepo.TotalCount,
+                    pageSize = authorsFromRepo.PageSize,
+                    currentPage = authorsFromRepo.CurrentPage,
+                    totalPages = authorsFromRepo.TotalPages
+                };
+
+                Response.Headers.Add("X-Pagination",
+                    JsonConvert.SerializeObject(paginationMetadata));
+
+                return Ok(authors.ShapeData(authorsResourceParameters.Fields));
+            }
         }
 
 
@@ -170,8 +199,40 @@ namespace jostva.Restful.API.Controllers
         }
 
 
-        [HttpPost]
+        [HttpPost(Name = "CreateAuthor")]
+        [RequestHeaderMatchesMediaType("Content-type", new[] { "application/vnd.marvin.author.full+json" })]
         public IActionResult CreateAuthor([FromBody] AuthorForCreationDto author)
+        {
+            if (author == null)
+            {
+                return BadRequest();
+            }
+
+            Author authorEntity = mapper.Map<Author>(author);
+            libraryRepository.AddAuthor(authorEntity);
+
+            if (!libraryRepository.Save())
+            {
+                throw new Exception("Creating an author failed on save.");
+                //return StatusCode(500, "A problem happend with handling your request.");
+            }
+
+            AuthorDto authorToReturn = mapper.Map<AuthorDto>(authorEntity);
+            var links = CreateLinksForAuthor(authorToReturn.Id, null);
+
+            var linkedResourceToReturn = authorToReturn.ShapeData(null) as IDictionary<string, object>;
+
+            linkedResourceToReturn.Add("links", links);
+
+            return CreatedAtRoute("GetAuthor", new { id = linkedResourceToReturn["Id"] }, linkedResourceToReturn);
+        }
+
+
+        [HttpPost(Name = "AuthorForCreationWithDateOfDeath")]
+        [RequestHeaderMatchesMediaType("Content-type", new[] { "application/vnd.marvin.authorwithdateofdeath.full+json",
+                                                               "application/vnd.marvin.authorwithdateofdeath.full+xml" })]
+        //[RequestHeaderMatchesMediaType("Accept", new[] { "..."})]
+        public IActionResult AuthorForCreationWithDateOfDeath([FromBody] AuthorForCreationWithDateOfDeathDto author)
         {
             if (author == null)
             {
