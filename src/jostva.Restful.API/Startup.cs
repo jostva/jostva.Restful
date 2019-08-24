@@ -3,7 +3,6 @@
 using AutoMapper;
 using jostva.Restful.API.Entities;
 using jostva.Restful.API.Mapping;
-using jostva.Restful.API.Models;
 using jostva.Restful.API.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
@@ -18,7 +17,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
-using NLog.Extensions.Logging;
 
 #endregion
 
@@ -43,12 +41,13 @@ namespace jostva.Restful.API
             services.AddScoped<ILibraryRepository, LibraryRepository>();
 
             services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
-
+            services.AddSingleton<IUrlHelperFactory, UrlHelperFactory>();
             services.AddScoped<IUrlHelper>(implementationFactory =>
             {
-                var actionContext = implementationFactory.GetService<IActionContextAccessor>()
-                .ActionContext;
-                return new UrlHelper(actionContext);
+                ActionContext actionContext = implementationFactory.GetService<IActionContextAccessor>().ActionContext;
+                IUrlHelper urlHelper = implementationFactory.GetService<IUrlHelperFactory>().GetUrlHelper(actionContext);
+
+                return urlHelper;
             });
 
             services.AddTransient<IPropertyMappingService, PropertyMappingService>();

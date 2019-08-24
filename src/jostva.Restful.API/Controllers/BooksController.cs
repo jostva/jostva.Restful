@@ -1,35 +1,50 @@
-﻿using AutoMapper;
+﻿#region using
+
+using AutoMapper;
 using jostva.Restful.API.Entities;
 using jostva.Restful.API.Models;
 using jostva.Restful.API.Services;
-using jostva.Restful.API.Helpers;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
+using System.Linq;
+
+#endregion
 
 namespace jostva.Restful.API.Controllers
 {
     [Route("api/authors/{authorId}/books")]
     public class BooksController : Controller
     {
+        #region attributes
+
         private readonly ILibraryRepository libraryRepository;
         private readonly IMapper mapper;
         private readonly ILogger<BooksController> logger;
+        private readonly IUrlHelper urlHelper;
 
-        public BooksController(IMapper mapper, 
+        #endregion
+
+        #region constructor
+
+        public BooksController(IMapper mapper,
                                 ILibraryRepository libraryRepository,
-                                ILogger<BooksController> logger)
+                                ILogger<BooksController> logger,
+                                IUrlHelper urlHelper)
         {
             this.libraryRepository = libraryRepository;
             this.mapper = mapper;
             this.logger = logger;
+            this.urlHelper = urlHelper;
         }
+
+        #endregion
 
         #region methods
 
-        [HttpGet()]
+        [HttpGet(Name = "GetBooksForAuthor")]
         public IActionResult GetBooksForAuthor(Guid authorId)
         {
             if (!libraryRepository.AuthorExists(authorId))
@@ -40,7 +55,15 @@ namespace jostva.Restful.API.Controllers
             IEnumerable<Book> booksForAuthorsFromRepo = libraryRepository.GetBooksForAuthor(authorId);
             IEnumerable<BookDto> booksForAuthor = mapper.Map<IEnumerable<BookDto>>(booksForAuthorsFromRepo);
 
-            return Ok(booksForAuthor);
+            booksForAuthor = booksForAuthor.Select(book =>
+            {
+                book = CreateLinksForBooks(book);
+                return book;
+            });
+
+            LinkedCollectionResourceWrapperDto<BookDto> wrapper = new LinkedCollectionResourceWrapperDto<BookDto>(booksForAuthor);
+
+            return Ok(CreateLinksForBooks(wrapper));
         }
 
 
@@ -59,11 +82,11 @@ namespace jostva.Restful.API.Controllers
             }
 
             BookDto bookForAuthor = mapper.Map<BookDto>(bookForAuthorFromRepo);
-            return Ok(bookForAuthor);
+            return Ok(CreateLinksForBooks(bookForAuthor));
         }
 
 
-        [HttpPost]
+        [HttpPost(Name = "CreateBookForAuthor")]
         public IActionResult CreateBookForAuthor(Guid authorId, [FromBody] BookForCreationDto book)
         {
             if (book == null)
@@ -96,11 +119,11 @@ namespace jostva.Restful.API.Controllers
             }
 
             BookDto bookToReturn = mapper.Map<BookDto>(bookEntity);
-            return CreatedAtRoute("GetBookForAuthor", new { authorId, id = bookToReturn.Id }, bookToReturn);
+            return CreatedAtRoute("GetBookForAuthor", new { authorId, id = bookToReturn.Id }, CreateLinksForBooks(bookToReturn));
         }
 
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id}", Name = "DeleteBookForAuthor")]
         public IActionResult DeleteBookForAuthor(Guid authorId, Guid id)
         {
             if (!libraryRepository.AuthorExists(authorId))
@@ -125,7 +148,7 @@ namespace jostva.Restful.API.Controllers
         }
 
 
-        [HttpPut("{id}")]
+        [HttpPut("{id}", Name = "UpdateBookForAuthor")]
         public IActionResult UpdateBookForAuthor(Guid authorId, Guid id, [FromBody] BookForUpdateDto book)
         {
             if (book == null)
@@ -184,7 +207,7 @@ namespace jostva.Restful.API.Controllers
         }
 
 
-        [HttpPatch("{id}")]
+        [HttpPatch("{id}", Name = "PartiallyUpdateBookForAuthor")]
         public IActionResult PartiallyUpdateBookForAuthor(Guid authorId, Guid id,
             [FromBody] JsonPatchDocument<BookForUpdateDto> patchDoc)
         {
@@ -254,6 +277,49 @@ namespace jostva.Restful.API.Controllers
             }
 
             return NoContent();
+        }
+
+
+        private BookDto CreateLinksForBooks(BookDto book)
+        {
+            book.Links.Add(new LinkDto(urlHelper.Link("GetBookForAuthor",
+                    new { id = book.Id }),
+                    "self",
+                    "GET"
+                ));
+
+            book.Links.Add(new LinkDto(urlHelper.Link("DeleteBookForAuthor",
+                    new { id = book.Id }),
+                    "delete_book",
+                    "DELETE"
+                ));
+
+            book.Links.Add(new LinkDto(urlHelper.Link("UpdateBookForAuthor",
+                    new { id = book.Id }),
+                    "update_book",
+                    "PUT"
+                ));
+
+            book.Links.Add(new LinkDto(urlHelper.Link("PartiallyUpdateBookForAuthor",
+                    new { id = book.Id }),
+                    "partially_update_book",
+                    "PATCH"
+                ));
+
+            return book;
+        }
+
+
+        private LinkedCollectionResourceWrapperDto<BookDto> CreateLinksForBooks(
+            LinkedCollectionResourceWrapperDto<BookDto> booksWrapper)
+        {
+            //  Link to self.
+            booksWrapper.Links.Add(new LinkDto(urlHelper.Link("GetBooksForAuthor",
+                    new { }),
+                     "self",
+                     "GET"));
+
+            return booksWrapper;
         }
 
         #endregion
