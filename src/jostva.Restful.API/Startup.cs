@@ -11,10 +11,13 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Serialization;
 using NLog.Extensions.Logging;
 
 #endregion
@@ -36,7 +39,22 @@ namespace jostva.Restful.API
             string connectionString = Configuration["connectionStrings:libraryDBConnectionString"];
             services.AddDbContext<LibraryContext>(item => item.UseSqlServer(connectionString));
 
+            //  register the repository
             services.AddScoped<ILibraryRepository, LibraryRepository>();
+
+            services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
+
+            services.AddScoped<IUrlHelper>(implementationFactory =>
+            {
+                var actionContext = implementationFactory.GetService<IActionContextAccessor>()
+                .ActionContext;
+                return new UrlHelper(actionContext);
+            });
+
+            services.AddTransient<IPropertyMappingService, PropertyMappingService>();
+
+            services.AddTransient<ITypeHelperService, TypeHelperService>();
+
 
             MapperConfiguration mappingConfig = new MapperConfiguration(config =>
             {
@@ -51,12 +69,16 @@ namespace jostva.Restful.API
                 setupAction.ReturnHttpNotAcceptable = true;
                 setupAction.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter());
 
-                //  INVESTIGAR!! - No está recibiendo XML....
+                //  TODO:   INVESTIGAR!! - No está recibiendo XML....
                 setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter(setupAction));
             })
             //.AddXmlSerializerFormatters()
             //.AddXmlDataContractSerializerFormatters()
-            .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            .SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
+            .AddJsonOptions(options =>
+            {
+                options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -68,7 +90,7 @@ namespace jostva.Restful.API
             //loggerFactory.AddDebug(LogLevel.Information);
 
             // loggerFactory.AddProvider(new NLog.Extensions.Logging.NLogLoggerProvider());
-           // loggerFactory.AddNLog();
+            // loggerFactory.AddNLog();
 
             if (env.IsDevelopment())
             {

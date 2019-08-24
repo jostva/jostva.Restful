@@ -2,10 +2,12 @@
 
 using AutoMapper;
 using jostva.Restful.API.Entities;
+using jostva.Restful.API.Helpers;
 using jostva.Restful.API.Models;
 using jostva.Restful.API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
@@ -20,34 +22,125 @@ namespace jostva.Restful.API.Controllers
 
         private readonly ILibraryRepository libraryRepository;
         private readonly IMapper mapper;
+        private readonly IUrlHelper urlHelper;
+        private readonly IPropertyMappingService propertyMappingService;
+        private readonly ITypeHelperService typeHelperService;
 
         #endregion
 
         #region constructor
 
-        public AuthorsController(IMapper mapper, ILibraryRepository libraryRepository)
+        public AuthorsController(IMapper mapper,
+                                ILibraryRepository libraryRepository,
+                                IUrlHelper urlHelper,
+                                IPropertyMappingService propertyMappingService,
+                                ITypeHelperService typeHelperService)
         {
             this.libraryRepository = libraryRepository;
             this.mapper = mapper;
+            this.urlHelper = urlHelper;
+            this.propertyMappingService = propertyMappingService;
+            this.typeHelperService = typeHelperService;
         }
 
         #endregion
 
         #region methods
 
-        [HttpGet()]
-        public IActionResult GetAuthors()
+        [HttpGet(Name = "GetAuthors")]
+        //public IActionResult GetAuthors([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters)
         {
-            IEnumerable<Author> authorsFromRepo = libraryRepository.GetAuthors();
-            IEnumerable<AuthorDto> authors = mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo);
+            if (!propertyMappingService.ValidMappingExistsFor<AuthorDto, Author>(authorsResourceParameters.OrderBy))
+            {
+                return BadRequest();
+            }
 
-            return Ok(authors);
+            if (!typeHelperService.TypeHasProperties<AuthorDto>(authorsResourceParameters.Fields))
+            {
+                return BadRequest();
+            }
+
+            PagedList<Author> authorsFromRepo = libraryRepository.GetAuthors(authorsResourceParameters);
+
+            string previousPageLink = authorsFromRepo.HasPrevious ?
+                                        CreateAuthorsResourceUri(authorsResourceParameters,
+                                        ResourceUriType.PreviousPage) : null;
+
+            string nextPageLink = authorsFromRepo.HasNext ?
+                                        CreateAuthorsResourceUri(authorsResourceParameters,
+                                        ResourceUriType.NextPage) : null;
+
+            var paginationMetadata = new
+            {
+                totalCount = authorsFromRepo.TotalCount,
+                pageSize = authorsFromRepo.PageSize,
+                currentPage = authorsFromRepo.CurrentPage,
+                totalPages = authorsFromRepo.TotalPages,
+                previousPageLink = previousPageLink,
+                nextPageLink = nextPageLink
+            };
+
+            Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(paginationMetadata));
+
+            IEnumerable<AuthorDto> authors = mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo);
+            return Ok(authors.ShapeData(authorsResourceParameters.Fields));
+        }
+
+
+        //  TODO:   urlHelper.Link()  INVESTIGAR EN CORE 2.2
+        private string CreateAuthorsResourceUri(AuthorsResourceParameters authorsResourceParameters,
+                            ResourceUriType type)
+        {
+            switch (type)
+            {
+                case ResourceUriType.PreviousPage:
+                    return urlHelper.Link("GetAuthors",
+                                new
+                                {
+                                    fields = authorsResourceParameters.Fields,
+                                    orderBy = authorsResourceParameters.OrderBy,
+                                    searchQuery = authorsResourceParameters.SearchQuery,
+                                    genre = authorsResourceParameters.Genre,
+                                    pageNumber = authorsResourceParameters.PageNumber - 1,
+                                    pageSize = authorsResourceParameters.PageSize
+                                });
+
+                case ResourceUriType.NextPage:
+                    return urlHelper.Link("GetAuthors",
+                                new
+                                {
+                                    fields = authorsResourceParameters.Fields,
+                                    orderBy = authorsResourceParameters.OrderBy,
+                                    searchQuery = authorsResourceParameters.SearchQuery,
+                                    genre = authorsResourceParameters.Genre,
+                                    pageNumber = authorsResourceParameters.PageNumber + 1,
+                                    pageSize = authorsResourceParameters.PageSize
+                                });
+
+                default:
+                    return urlHelper.Link("GetAuthors",
+                                new
+                                {
+                                    fields = authorsResourceParameters.Fields,
+                                    orderBy = authorsResourceParameters.OrderBy,
+                                    searchQuery = authorsResourceParameters.SearchQuery,
+                                    genre = authorsResourceParameters.Genre,
+                                    pageNumber = authorsResourceParameters.PageNumber,
+                                    pageSize = authorsResourceParameters.PageSize
+                                });
+            }
         }
 
 
         [HttpGet("{id}", Name = "GetAuthor")]
-        public IActionResult GetAuthor(Guid id)
+        public IActionResult GetAuthor(Guid id, [FromQuery] string fields)
         {
+            if (!typeHelperService.TypeHasProperties<AuthorDto>(fields))
+            {
+                return BadRequest();
+            }
+
             Author authorFromRepo = libraryRepository.GetAuthor(id);
             if (authorFromRepo == null)
             {
@@ -56,7 +149,7 @@ namespace jostva.Restful.API.Controllers
 
             AuthorDto author = mapper.Map<AuthorDto>(authorFromRepo);
 
-            return Ok(author);
+            return Ok(author.ShapeData(fields));
         }
 
 

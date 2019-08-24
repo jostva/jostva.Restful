@@ -1,6 +1,7 @@
 ﻿#region methods
 
 using jostva.Restful.API.Entities;
+using jostva.Restful.API.Helpers;
 using System;
 using System.Collections.Generic;
 
@@ -10,7 +11,7 @@ namespace jostva.Restful.API.Services
 {
     public interface ILibraryRepository
     {
-        IEnumerable<Author> GetAuthors();
+        PagedList<Author> GetAuthors(AuthorsResourceParameters authorsResourceParameters);
 
         Author GetAuthor(Guid authorId);
 
