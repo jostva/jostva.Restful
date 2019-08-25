@@ -55,6 +55,18 @@ namespace jostva.Restful.API
 
             services.AddTransient<ITypeHelperService, TypeHelperService>();
 
+            //  Adding Cache Headers nuget: Marvin.Cache.Headers.
+            services.AddHttpCacheHeaders((expirationModelOptions) =>
+            {
+                expirationModelOptions.MaxAge = 600;
+            },
+            (validationModelOptions) =>
+            {
+                validationModelOptions.MustRevalidate = true;
+            });
+
+            //  Adding Cache Store (Microsoft).
+            services.AddResponseCaching();
 
             MapperConfiguration mappingConfig = new MapperConfiguration(config =>
             {
@@ -140,9 +152,11 @@ namespace jostva.Restful.API
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-
-
+            
             libraryContext.EnsureSeedDataForContext();
+
+            app.UseResponseCaching();
+            app.UseHttpCacheHeaders();
 
             app.UseHttpsRedirection();
             app.UseMvc();
