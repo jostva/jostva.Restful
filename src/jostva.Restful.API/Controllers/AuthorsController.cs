@@ -49,6 +49,7 @@ namespace jostva.Restful.API.Controllers
         #region methods
 
         [HttpGet(Name = "GetAuthors")]
+        [HttpHead]
         //public IActionResult GetAuthors([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters,
             [FromHeader(Name = "Accept")] string mediaType)
@@ -351,6 +352,14 @@ namespace jostva.Restful.API.Controllers
             }
 
             return links;
+        }
+
+
+        [HttpOptions]
+        public IActionResult GetAuthorsOptions()
+        {
+            Response.Headers.Add("Allow", "GET,OPTIONS,POST");
+            return Ok();
         }
 
         #endregion

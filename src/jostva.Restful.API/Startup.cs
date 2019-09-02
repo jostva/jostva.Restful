@@ -1,5 +1,6 @@
 ﻿#region usings
 
+using AspNetCoreRateLimit;
 using AutoMapper;
 using jostva.Restful.API.Entities;
 using jostva.Restful.API.Mapping;
@@ -17,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
+using System.Collections.Generic;
 using System.Linq;
 
 #endregion
@@ -112,6 +114,27 @@ namespace jostva.Restful.API
             {
                 options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             });
+
+
+            //  Rate Limit
+            services.AddMemoryCache();
+
+            services.Configure<IpRateLimitOptions>((options) =>
+            {
+                options.GeneralRules = new List<RateLimitRule>()
+                {
+                    new RateLimitRule()
+                    {
+                        Endpoint = "*",
+                        Limit = 3,
+                        Period = "5m"
+                    }
+                };
+            });
+
+            services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+            services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -152,8 +175,11 @@ namespace jostva.Restful.API
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-            
+
             libraryContext.EnsureSeedDataForContext();
+
+           //app.UseIpRateLimiting();
+          // app.UseClientRateLimiting();
 
             app.UseResponseCaching();
             app.UseHttpCacheHeaders();
